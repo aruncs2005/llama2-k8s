@@ -1,0 +1,62 @@
+apiVersion: "kubeflow.org/v1"
+kind: PyTorchJob
+metadata:
+  name: mosaicml-mpt7b
+spec:
+  elasticPolicy:
+    rdzvBackend: etcd
+    rdzvHost: etcd-service
+    rdzvPort: 2379
+    minReplicas: 2
+    maxReplicas: 2
+    maxRestarts: 3 
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+  pytorchReplicaSpecs:
+    Worker:
+      replicas: 2
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          labels:
+            app: mosaicmpt
+        spec: 
+          volumes:
+            - name: datavolfsx
+              hostPath:
+                path: /admin/data
+            - name: dshm
+              emptyDir:
+                medium: Memory
+          containers:
+            - name: pytorch
+              image: public.ecr.aws/e2m4q8p6/mosaicmlk8s:latest
+              imagePullPolicy: Always
+              resources:
+               limits:
+                 nvidia.com/gpu: 8
+                 hugepages-2Mi: 5120Mi
+                 vpc.amazonaws.com/efa: 4
+                 memory: 40000Mi
+               requests:
+                 nvidia.com/gpu: 8
+                 hugepages-2Mi: 5120Mi
+                 vpc.amazonaws.com/efa: 4
+                 memory: 40000Mi
+              env:
+              - name: LOGLEVEL
+                value: DEBUG  
+              command:
+                - bash
+                - -c
+                - "torchrun --nnodes=2 --nproc-per-node=8 --rdzv_id=1 run.py"
+              volumeMounts:
+                - mountPath: /dev/shm
+                  name: dshm
+                - name: datavolfsx
+                  mountPath: /admin/data
