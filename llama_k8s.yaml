@@ -54,7 +54,7 @@ spec:
               command:
                 - bash
                 - -c
-                - "torchrun --nnodes=2 --nproc-per-node=8 --rdzv_id=1 run.py"
+                - "torchrun --nnodes=2 --nproc-per-node=8 --rdzv_id=1 train.py"
               volumeMounts:
                 - mountPath: /dev/shm
                   name: dshm
