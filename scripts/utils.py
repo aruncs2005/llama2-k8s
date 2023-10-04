@@ -152,6 +152,7 @@ def parse_args():
     parser.add_argument("--forward_prefetch", type=bool, default=False)
     parser.add_argument("--cache_dir",type=str,default="/tmp")
     parser.add_argument("--access_token",type=str,default=None)
+    parser.add_argument("--logging_freq",type=int,default=10)
 
     args,_ = parser.parse_known_args()
 

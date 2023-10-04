@@ -298,7 +298,7 @@ def main():
 
         model.train()
 
-        fsdp_loss = torch.zeros(2).to(args.local_rank)
+        #fsdp_loss = torch.zeros(2).to(args.local_rank)
 
         for _, batch in enumerate(tqdm(train_dataloader,disable=not is_main_process(args.rank))):
 
@@ -306,21 +306,32 @@ def main():
             output = model(**batch)
             loss = output["loss"]
             loss.backward()
-            fsdp_loss[0] += loss.item()
-            fsdp_loss[1] += len(batch["input_ids"])
+            #fsdp_loss[0] += loss.item()
+            #fsdp_loss[1] += len(batch["input_ids"])
         
             optimizer.step()
             lr_scheduler.step()
             optimizer.zero_grad()
             total_steps += 1
+
+            if not total_steps % args.logging_freq:
+                loss_detached = loss.detach()
+                torch.distributed.all_reduce(loss_detached)
+                loss_scalar = loss_detached.item() / torch.distributed.get_world_size()
+                #train_ppl = torch.exp(loss_scalar)
+               
+                if is_main_process(args.rank):
+                    logger.info(f"******{total_steps=}: {loss_scalar=}******")
+            else:
+                loss_scalar = loss.item()
              
 
-        torch.distributed.all_reduce(fsdp_loss, op=torch.distributed.ReduceOp.SUM)
-        train_loss = fsdp_loss[0] / fsdp_loss[1]
-        train_ppl = torch.exp(train_loss)
+        # torch.distributed.all_reduce(fsdp_loss, op=torch.distributed.ReduceOp.SUM)
+        # train_loss = fsdp_loss[0] / fsdp_loss[1]
+                #train_ppl = torch.exp(train_loss)
 
-        if is_main_process(args.rank):
-            logger.info(f"******{epoch=}: {train_ppl=} {train_loss=}******")
+        # if is_main_process(args.rank):
+        #     logger.info(f"******{epoch=}: {train_ppl=} {train_loss=}******")
 
         model.eval()
         eval_loss = 0
