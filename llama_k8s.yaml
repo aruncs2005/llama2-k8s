@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1"
 kind: PyTorchJob
 metadata:
-  name: mosaicml-mpt7b
+  name: fsdp-llama7b
 spec:
   elasticPolicy:
     rdzvBackend: etcd
@@ -24,7 +24,7 @@ spec:
       template:
         metadata:
           labels:
-            app: mosaicmpt
+            app: llama2
         spec: 
           volumes:
             - name: datavolfsx
